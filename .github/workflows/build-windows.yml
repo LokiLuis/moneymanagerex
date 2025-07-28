@@ -1,0 +1,59 @@
+# Nome del workflow che vedrai in GitHub Actions
+name: Build MoneyManagerEx for Windows
+
+# Permette di avviare il workflow manualmente dalla scheda "Actions"
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Usa l'ultima versione di Windows disponibile su GitHub Actions
+    runs-on: windows-latest
+
+    steps:
+      # 1. Scarica il codice sorgente di MoneyManagerEx dal tuo repository
+      - name: Checkout MoneyManagerEx source code
+        uses: actions/checkout@v4
+        with:
+          path: moneymanagerex # Scarica in una sottocartella per non fare confusione
+
+      # 2. Scarica il codice sorgente di wxWidgets (libreria grafica)
+      - name: Checkout wxWidgets source code
+        uses: actions/checkout@v4
+        with:
+          repository: wxwidgets/wxwidgets
+          ref: v3.2.5 # Usa una versione stabile e recente di wxWidgets
+          path: wxwidgets
+
+      # 3. Imposta l'ambiente di sviluppo di Visual Studio (necessario per compilare su Windows)
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      # 4. Compila wxWidgets
+      - name: Build wxWidgets
+        shell: cmd
+        run: |
+          cd wxwidgets
+          mkdir build-cmake
+          cd build-cmake
+          cmake .. -DwxBUILD_SAMPLES=OFF -DwxBUILD_TESTS=OFF -DwxBUILD_DEMOS=OFF
+          msbuild wx.sln /p:Configuration=Release /p:Platform=x64
+
+      # 5. Compila MoneyManagerEx
+      - name: Build MoneyManagerEx
+        shell: cmd
+        run: |
+          cd moneymanagerex
+          mkdir build
+          cd build
+          cmake .. -DwxWidgets_DIR=../../wxwidgets/build-cmake -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
+      # 6. Carica l'eseguibile come Artifact (IL PASSAGGIO CHE MANCAVA!)
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Nome del file .zip che scaricherai
+          name: MoneyManagerEx-Windows-Executable
+          # Percorso del file da caricare. Questo cerca l'eseguibile nella cartella di build
+          path: moneymanagerex/build/src/Release/moneymanagerex.exe
