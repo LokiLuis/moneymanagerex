@@ -1,0 +1,37 @@
+name: Build Windows Executable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          choco install -y cmake
+          choco install -y ninja
+          choco install -y wxwidgets
+          choco install -y git
+          choco install -y visualstudio2022buildtools
+          choco install -y visualstudio2022-workload-vctools
+          RefreshEnv
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Configure project
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build project
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MoneyManagerEx-Windows
+          path: build/**/*.exe
