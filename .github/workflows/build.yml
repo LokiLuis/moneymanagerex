@@ -1,0 +1,41 @@
+name: Build MoneyManagerEX Windows Executable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          choco install -y cmake ninja visualstudio2022buildtools visualstudio2022-workload-vctools git
+          # Non installiamo wxwidgets con choco perché spesso non è affidabile e potrebbe mancare la versione richiesta.
+
+      - name: Download wxWidgets
+        run: |
+          git clone --depth 1 https://github.com/wxWidgets/wxWidgets.git wxwidgets
+
+      - name: Build wxWidgets
+        shell: powershell
+        run: |
+          mkdir wxwidgets\build
+          cd wxwidgets\build
+          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DwxBUILD_SHARED=OFF -DwxBUILD_MONOLITHIC=ON
+          cmake --build . --config Release
+
+      - name: Configure MoneyManagerEX project
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DwxWidgets_ROOT_DIR=${{ github.workspace }}\wxwidgets\build
+
+      - name: Build MoneyManagerEX
+        run: cmake --build build --config Release
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MoneyManagerEx-Windows
+          path: build/**/*.exe
