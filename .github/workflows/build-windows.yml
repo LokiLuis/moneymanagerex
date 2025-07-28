@@ -30,29 +30,28 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
-        # 4. Compila wxWidgets
-      - name: Configure wxWidgets with CMake
-        shell: cmd
-        run: |
-          cd wxwidgets
-          mkdir build-cmake
-          cd build-cmake
-          cmake .. -DwxBUILD_SAMPLES=OFF -DwxBUILD_TESTS=OFF -DwxBUILD_DEMOS=OFF
+                  # 4. Scarica e compila wxWidgets usando un'azione dedicata
+      - name: Setup wxWidgets
+        uses: fondesa/setup-wxwidgets@v1
+        with:
+          # Versione di wxWidgets da usare (deve corrispondere a quella usata da MoneyManagerEx)
+          wx-version: '3.2.5'
+          # Scegliamo di usare CMake per la compilazione
+          build-type: 'cmake'
+          # Specifichiamo l'architettura a 64-bit
+          arch: 'x64'
 
-      - name: Build wxWidgets with MSBuild
-        shell: cmd
-        run: |
-          cd wxwidgets/build-cmake
-          msbuild wx.sln /p:Configuration=Release /p:Platform=x64
-
-      # 5. Compila MoneyManagerEx
+            # 5. Compila MoneyManagerEx
       - name: Build MoneyManagerEx
         shell: cmd
+        env:
+          # Questa variabile d'ambiente viene creata dall'azione setup-wxwidgets
+          WXWIN: ${{ env.WXWIN }} 
         run: |
           cd moneymanagerex
           mkdir build
           cd build
-          cmake .. -DwxWidgets_DIR=../../wxwidgets/build-cmake -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release
 
       # 6. Carica l'eseguibile come Artifact (IL PASSAGGIO CHE MANCAVA!)
