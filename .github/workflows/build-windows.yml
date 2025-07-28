@@ -24,6 +24,7 @@ jobs:
           repository: wxwidgets/wxwidgets
           ref: v3.2.5 # Usa una versione stabile e recente di wxWidgets
           path: wxwidgets
+          submodules: 'recursive'
 
       # 3. Imposta l'ambiente di sviluppo di Visual Studio (necessario per compilare su Windows)
       - name: Add MSBuild to PATH
